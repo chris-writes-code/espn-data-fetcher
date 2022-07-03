@@ -1,0 +1,16 @@
+{
+  "name": "espn-fetch",
+  "version": "1.0.0",
+  "description": "Fetches key ESPN NFL Fantasy stats",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chris M.",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "espn-fantasy-football-api": "^0.16.1",
+    "express": "^4.18.1"
+  }
+}
