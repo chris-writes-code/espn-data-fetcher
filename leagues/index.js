@@ -3,20 +3,38 @@ require('dotenv').config();
 const { delay } = require('../helpers');
 const { Client } = require('espn-fantasy-football-api/node');
 
+const fs = require('fs');
+
 class LeagueController {
     constructor() {
         this.seasons = {};
     }
 
-    async fetchData(req, res) {
-        res.status(200).json(this.seasons);
+    async loadFromFile() {
+        try {
+            this.seasons = JSON.parse(fs.readFileSync('seasons.json'));
+            console.log('Successfully populated the internal database from seasons.json');
+        } catch (e) {
+            console.error('File not found!');
+        }
     }
 
-    async getSeason(req, res) {
-        const { leagueId, seasonId } = req.params;
+    async exportCSV() {
+        console.log(`Starting CSV export process, please wait. This can take some time...`);
+        Object.keys(this.seasons).forEach(key => {
+            // key represents a unique league and season
+            const tokens = key.split('-');
+            const leagueId = tokens[0];
+            const seasonId = tokens[1];
 
-        res.status(200).send(`Starting ${seasonId} season history for league ${leagueId}`);
-        console.log(`Started ${seasonId} season history for league ${leagueId}`);
+            console.log(leagueId, seasonId);
+
+            // TODO: Add CSV library and export to separate files in /export folder
+        });
+    }
+
+    async getSeason(leagueId, seasonId) {
+        console.log(`Started ${seasonId} season history for league ${leagueId}, please wait. This process can take some time...`);
 
         try {
             const client = new Client({ leagueId });
@@ -49,7 +67,7 @@ class LeagueController {
                     tdResult.forEach(team => {
                         teamData[team.id] = team;
                     });
-                    await delay(100);
+                    await delay(50);
 
                     // fetch matchup boxscore data for this week
                     const result = await client.getBoxscoreForWeek({
@@ -63,7 +81,7 @@ class LeagueController {
                         seasonHistory[`matchup-${currentMatchup}`] = { 'week-1': this.format(result, teamData) };
                     }
                     currentScoring++;
-                    await delay(100); // no idea if there is rate-limiting, but better safe than sorry
+                    await delay(50); // no idea if there is rate-limiting, but better safe than sorry
                 }
                 currentMatchup++;
             }
@@ -81,7 +99,7 @@ class LeagueController {
                     tdResult.forEach(team => {
                         teamData[team.id] = team;
                     });
-                    await delay(100);
+                    await delay(50);
 
                     // fetch matchup boxscore data for this week
                     const result = await client.getBoxscoreForWeek({
@@ -95,17 +113,16 @@ class LeagueController {
                         seasonHistory[`playoff-matchup-${currentMatchup}`] = { 'week-1': this.format(result, teamData) };
                     }
                     currentScoring++;
-                    await delay(100); // no idea if there is rate-limiting, but better safe than sorry
+                    await delay(50); // no idea if there is rate-limiting, but better safe than sorry
                 }
                 currentMatchup++;
             }
 
             // store back to class object for future messing about
             this.seasons[`${leagueId}-${seasonId}`] = seasonHistory;
-
             console.log(`Completed ${seasonId} season history for league ${leagueId}`);
 
-            // TODO: think about optimal lineup -- rosters listed have eligible positions array, leagueInfo has roster constructions
+            fs.writeFileSync('seasons.json', JSON.stringify(this.seasons));
 
         } catch (e) {
             console.error(`Error fetching ${seasonId} season history for league ${leagueId}: ${e}`);
@@ -113,11 +130,62 @@ class LeagueController {
     }
 
     format(result, teamData) {
-        return result.map(r => ({
-            homeTeam: teamData[r.homeTeamId],
-            awayTeam: teamData[r.awayTeamId],
-            ...r,
-        }));
+        const formatted = [];
+        result.forEach(r => {
+            const { total: homeOptimalScore, bestLineup: homeOptimalRoster } = this.optimalLineup(
+                r.homeRoster,
+                r.homeRoster.filter(p => p.position !== 'Bench' && p.position !== 'IR').map(p => p.position),
+                [], 0, -Infinity, []
+            );
+            const { total: awayOptimalScore, bestLineup: awayOptimalRoster } = this.optimalLineup(
+                r.awayRoster,
+                r.awayRoster.filter(p => p.position !== 'Bench' && p.position !== 'IR').map(p => p.position),
+                [], 0, -Infinity, []
+            );
+            formatted.push({
+                homeTeam: teamData[r.homeTeamId],
+                homeOptimalScore,
+                homeOptimalRoster,
+                homeScoreWithBench: r.homeRoster.reduce((acc, p) => acc += p.totalPoints, 0),
+                awayTeam: teamData[r.awayTeamId],
+                awayOptimalScore,
+                awayOptimalRoster,
+                awayScoreWithBench: r.awayRoster.reduce((acc, p) => acc += p.totalPoints, 0),
+                ...r,
+            });
+        });
+        return formatted;
+    }
+
+    optimalLineup(lineup, construction, currentLineup, sum, max, bestLineup) {
+        if (!construction.length) return { total: sum, bestLineup: currentLineup };
+
+        // array of players that can fill the current roster spot
+        const matches = lineup.filter(l => l.player.eligiblePositions.includes(construction[0]));
+        if (!matches.length) return { total: -Infinity, bestLineup: currentLineup }; // no matches, return bad total
+
+        matches.forEach(m => {
+            const { total, bestLineup: lu } = this.optimalLineup(
+                lineup.filter(l => l.player.id !== m.player.id), // all but our selected player
+                construction.slice(1), // get rid of the filled roster spot
+                [...currentLineup, // spread currentLineup into new array
+                { // build player object in response lineup -- with filled roster position
+                    name: m.player.fullName,
+                    points: m.totalPoints,
+                    position: construction[0],
+                }
+                ],
+                sum + m.totalPoints, // add to current recursion sum
+                max, // pass along current max
+                bestLineup // pass along current bestLineup
+            );
+            if (total > max) {
+                max = total;
+                bestLineup = lu;
+            }
+        });
+
+        return { total: Math.round(max * 100) / 100, bestLineup };
     }
 };
 
