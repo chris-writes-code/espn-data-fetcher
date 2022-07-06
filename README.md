@@ -19,3 +19,12 @@ Very early custom datapoint fetching utility which implements the [ESPN Fantasy 
 3. Calculate optimal points and lineups in each matchup
 4. Calculate total roster points (including bench)
 5. Load from pre-existing seasons.json file
+
+## How to Use
+
+1. Download the contents of this repository into a directory of your choosing.
+2. Copy the `.env-template` file and rename it to `.env` in the root directory (where `index.js` is).
+3. Inside `.env`, update the `espnS2` value to match the cookie of the same name when you're logged in at ESPN.com. Do the same for the `SWID`.
+4. Make sure you have [NodeJS](https://nodejs.org/en/) and NPM installed on your machine.
+5. In a command prompt (terminal) window, navigate to the directory with the contents of this repository (ex. `cd C:/my/folder/with/this/repository`). Run `npm install` in this directory.
+6. Once all of the dependencies finish installing, you can run `node index` to start the program. You can type `help` (or just press enter) to list all available commands.
