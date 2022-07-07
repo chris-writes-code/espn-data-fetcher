@@ -26,7 +26,7 @@ const prompt = () => {
                     case 'exit':
                         return rl.close();
                     default:
-                        console.log('\nCommands:\npullSeason LEAGUE_ID SEASON - Run this command first. It will export the results to seasons.json in the root directory.\nexportCSV - Run this command once you\'ve populated the seasons you want.\nloadFromFile - Run this command to load from an existing seasons.json (great for testing purposes).\nexit - Exits this program.\n');
+                        defaultLog();
                 };
                 rl.prompt();
             }).on('close', () => {
@@ -39,8 +39,13 @@ const prompt = () => {
     });
 };
 
+const defaultLog = () => {
+    console.log('\nCommands:\npullSeason LEAGUE_ID SEASON - Run this command first. It will export the results to seasons.json in the root directory.\nexportCSV - Run this command once you\'ve populated the seasons you want.\nloadFromFile - Run this command to load from an existing seasons.json (great for testing purposes).\nexit - Exits this program.\n');
+}
+
 const main = async () => {
     try {
+        console.log('\nCommands:\npullSeason LEAGUE_ID SEASON - Run this command first. It will export the results to seasons.json in the root directory.\nexportCSV - Run this command once you\'ve populated the seasons you want.\nloadFromFile - Run this command to load from an existing seasons.json (great for testing purposes).\nexit - Exits this program.\n');
         await prompt();
     } catch (e) {
         console.log(`Error: ${e}`);
