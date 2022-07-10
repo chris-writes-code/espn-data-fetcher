@@ -31,3 +31,7 @@ Very early custom datapoint fetching utility which implements the [ESPN Fantasy 
 4. Make sure you have [NodeJS](https://nodejs.org/en/) and NPM installed on your machine.
 5. In a command prompt (terminal) window, navigate to the directory with the contents of this repository (ex. `cd C:/my/folder/with/this/repository`). Run `npm install` in this directory.
 6. Once all of the dependencies finish installing, you can run `node index` to start the program. You can type `help` at any time to list all available commands. Generally, you would start by running `pullSeason {LEAGUE_ID} {SEASON}` and waiting for that to complete. This will populate your `seasons.json` file. From there, you could export to CSV using the `exportCSV` command. When you open the program in the future, you can use the `loadFromFile` command to pre-load your `seasons.json` file, if needed.
+
+## Tutorial Video
+
+[![Tutorial Video](http://img.youtube.com/vi/VEXyEH2WI6s/0.jpg)](http://www.youtube.com/watch?v=VEXyEH2WI6s)
